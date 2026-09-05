@@ -1,0 +1,147 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String        @id @default(uuid())
+  memberId       String        @unique // Somaiya ID Card Number
+  gymMembershipId String?      // Gym Membership ID
+  name           String
+  email          String        @unique
+  phone          String
+  bloodGroup     String
+  passwordHash   String
+  role           String        @default("MEMBER") // MEMBER, ADMIN
+  status         String        @default("ACTIVE") // ACTIVE, INACTIVE, BLOCKED
+  emailVerified  Boolean       @default(false)
+  otpCode        String?
+  otpExpiresAt   DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  bookings       Booking[]
+  waitlists      Waitlist[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+  @@index([memberId])
+}
+
+model Slot {
+  id          String   @id @default(uuid())
+  date        String   // YYYY-MM-DD
+  startTime   String   // HH:MM (24h)
+  endTime     String   // HH:MM (24h)
+  period      String   // MORNING or EVENING
+  capacity    Int      @default(25)
+  status      String   @default("ACTIVE") // ACTIVE, CANCELLED
+  createdAt   DateTime @default(now())
+
+  bookings    Booking[]
+  waitlists   Waitlist[]
+
+  @@unique([date, startTime, endTime])
+  @@index([date])
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  userId             String
+  slotId             String
+  status             String        @default("CONFIRMED") // CONFIRMED, CANCELLED, WAITLISTED, COMPLETED, NO_SHOW
+  bookedAt           DateTime      @default(now())
+  cancelledAt        DateTime?
+  cancellationReason String?
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slot               Slot          @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  attendance         Attendance?
+
+  @@index([userId])
+  @@index([slotId])
+  @@index([status])
+}
+
+model Attendance {
+  id           String           @id @default(uuid())
+  bookingId    String           @unique
+  status       String           @default("PENDING") // PENDING, ATTENDED, NOT_ATTENDED, EXCUSED
+  checkInTime  DateTime?
+  markedBy     String           // Admin ID or System
+  markedAt     DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  booking      Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Waitlist {
+  id        String   @id @default(uuid())
+  userId    String
+  slotId    String
+  position  Int
+  status    String   @default("WAITING") // WAITING, PROMOTED, EXPIRED, CANCELLED
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slot      Slot     @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@index([slotId, position])
+}
+
+model GymSettings {
+  id                          String   @id @default("default")
+  morningStart                String   @default("06:00")
+  morningEnd                  String   @default("09:00")
+  eveningStart                String   @default("16:00")
+  eveningEnd                  String   @default("21:00")
+  slotDurationMinutes         Int      @default(105) // 1h 45m session
+  slotIntervalMinutes         Int      @default(0)
+  defaultCapacity             Int      @default(25) // Fixed 25 members per user requirement
+  maxBookingsPerDay           Int      @default(1)
+  cancellationDeadlineMinutes Int      @default(30)
+  waitlistEnabled             Boolean  @default(true)
+  allowedDomains              String   @default("somaiya.edu")
+  updatedAt                   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  priority  String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  action     String
+  entityType String
+  entityId   String
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime @default(now())
+
+  admin      User     @relation(fields: [adminId], references: [id])
+}
