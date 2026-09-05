@@ -41,12 +41,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'The gym is CLOSED on Sundays (Operating days: Mon–Sat).' }, { status: 400 });
     }
 
-    // Check if slot time has already expired
+    // Check if slot time has already expired / completed its time frame (IST UTC+5:30)
     const now = new Date();
-    const slotEndTime = new Date(`${slot.date}T${slot.endTime}:00`);
+    const slotEndTime = new Date(`${slot.date}T${slot.endTime}:00+05:30`);
     if (now > slotEndTime) {
       return NextResponse.json(
-        { error: `This workout slot (${slot.date} ${slot.startTime}–${slot.endTime}) has already ended and can no longer be booked.` },
+        { error: `This workout slot (${slot.date} ${slot.startTime}–${slot.endTime}) has already completed its time frame and can no longer be booked.` },
         { status: 400 }
       );
     }

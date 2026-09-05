@@ -173,7 +173,7 @@ export default function BookSlotPage() {
                     <span
                       className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                         isExpired
-                          ? 'bg-slate-800 text-slate-500 border border-slate-700'
+                          ? 'bg-slate-850 text-slate-500 border border-slate-750'
                           : isFull
                           ? 'badge-vacancy-full'
                           : slot.vacancies <= 5
@@ -182,7 +182,7 @@ export default function BookSlotPage() {
                       }`}
                     >
                       {isExpired
-                        ? 'EXPIRED'
+                        ? 'TIME FRAME COMPLETED'
                         : isFull
                         ? `FULL (${slot.capacity}/${slot.capacity})`
                         : `${slot.vacancies} / ${slot.capacity} Available (${slot.vacancies} ${slot.vacancies === 1 ? 'spot' : 'spots'} left)`}
@@ -209,9 +209,9 @@ export default function BookSlotPage() {
                   ) : isExpired ? (
                     <button
                       disabled
-                      className="w-full py-2.5 bg-slate-900 text-slate-500 border border-slate-800 font-semibold text-xs rounded-xl cursor-not-allowed"
+                      className="w-full py-2.5 bg-slate-900/90 text-slate-500 border border-slate-800 font-semibold text-xs rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
                     >
-                      Session Ended (Expired)
+                      <span>Session Ended (Completed)</span>
                     </button>
                   ) : isFull ? (
                     slot.waitlistCount >= 5 ? (

@@ -29,6 +29,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ message: 'Booking is already cancelled' });
     }
 
+    // Check if slot time frame has already completed (IST UTC+5:30)
+    const now = new Date();
+    const slotEndTime = new Date(`${booking.slot.date}T${booking.slot.endTime}:00+05:30`);
+    if (now > slotEndTime && session.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Cannot cancel a booking for a workout slot that has already completed its time frame.' },
+        { status: 400 }
+      );
+    }
+
     // Process cancellation & Automatic Waitlist Promotion with Preference Swap
     const result = await prisma.$transaction(async (tx) => {
       // 1. Mark target booking CANCELLED

@@ -101,8 +101,8 @@ export async function GET(req: Request) {
       const userBooking = session ? slot.bookings.find((b) => b.userId === session.userId) : null;
       const userWaitlist = session ? slot.waitlists.find((w) => w.userId === session.userId) : null;
 
-      // Slot is expired if its date & end time has passed
-      const slotEndTime = new Date(`${slot.date}T${slot.endTime}:00`);
+      // Slot is expired if its date & end time has passed (enforced in IST UTC+5:30)
+      const slotEndTime = new Date(`${slot.date}T${slot.endTime}:00+05:30`);
       const isExpired = now > slotEndTime;
 
       return {
