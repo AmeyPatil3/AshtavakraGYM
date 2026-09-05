@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Sliders,
   Save,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -235,6 +237,61 @@ export default function AdminControlCenter() {
     }
   };
 
+  // Bulk Action for a Specific Slot: "Mark Slot All Attended"
+  const handleMarkSlotAllAttended = async (slotRecords: any[]) => {
+    if (!slotRecords || slotRecords.length === 0) return;
+
+    const updates = slotRecords.map((r) => ({
+      bookingId: r.bookingId,
+      status: 'ATTENDED',
+    }));
+
+    const slotBookingIds = new Set(slotRecords.map((r) => r.bookingId));
+    setAttendanceRecords((prev) =>
+      prev.map((rec) => (slotBookingIds.has(rec.bookingId) ? { ...rec, status: 'ATTENDED' } : rec))
+    );
+
+    try {
+      const res = await fetch('/api/admin/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAttMessage(data.error || 'Failed to save attendance');
+        return;
+      }
+
+      setAttMessage(`Marked all ${slotRecords.length} members as ATTENDED for slot (${slotRecords[0]?.slotTime}).`);
+      fetchAnalytics();
+    } catch (err: any) {
+      setAttMessage(err.message || 'Error saving attendance');
+    }
+  };
+
+  // Group attendance records by Session Period (MORNING / EVENING) -> Time Slot Window
+  const getGroupedAttendance = () => {
+    const grouped: Record<string, Record<string, any[]>> = {
+      MORNING: {},
+      EVENING: {},
+    };
+
+    attendanceRecords.forEach((rec) => {
+      const period = rec.slotPeriod === 'EVENING' ? 'EVENING' : 'MORNING';
+      const time = rec.slotTime || 'General Time Window';
+
+      if (!grouped[period][time]) {
+        grouped[period][time] = [];
+      }
+      grouped[period][time].push(rec);
+    });
+
+    return grouped;
+  };
+
   // Toggle Member Account Status
   const handleToggleMemberStatus = async (userId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE';
@@ -398,74 +455,142 @@ export default function AdminControlCenter() {
                 No member bookings recorded for date {attDate}.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
-                    <tr>
-                      <th className="p-3">Member ID</th>
-                      <th className="p-3">Member Name</th>
-                      <th className="p-3">Gym Membership ID</th>
-                      <th className="p-3">Slot Time</th>
-                      <th className="p-3">Current Status</th>
-                      <th className="p-3 text-right">Mark Attendance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {attendanceRecords.map((rec) => (
-                      <tr key={rec.bookingId} className="hover:bg-slate-850/50">
-                        <td className="p-3 font-mono font-semibold text-white">{rec.memberId}</td>
-                        <td className="p-3 font-medium text-slate-200">{rec.name}</td>
-                        <td className="p-3 font-mono text-blue-400 text-xs">{rec.gymMembershipId || 'N/A'}</td>
-                        <td className="p-3 font-mono">{rec.slotTime} ({rec.slotPeriod})</td>
-                        <td className="p-3">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${rec.status === 'ATTENDED'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : rec.status === 'NOT_ATTENDED'
-                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                : rec.status === 'EXCUSED'
-                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                  : 'bg-slate-800 text-slate-400'
-                              }`}
-                          >
-                            {rec.status}
+              <div className="space-y-8">
+                {['MORNING', 'EVENING'].map((periodKey) => {
+                  const grouped = getGroupedAttendance();
+                  const periodSlots = grouped[periodKey] || {};
+                  const slotTimes = Object.keys(periodSlots);
+                  const totalPeriodMembers = slotTimes.reduce((sum, t) => sum + periodSlots[t].length, 0);
+
+                  if (slotTimes.length === 0) return null;
+
+                  return (
+                    <div key={periodKey} className="space-y-4">
+                      {/* Session Category Header */}
+                      <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/90 border border-slate-800">
+                        <div className="flex items-center gap-2">
+                          {periodKey === 'MORNING' ? (
+                            <Sun className="w-5 h-5 text-amber-400" />
+                          ) : (
+                            <Moon className="w-5 h-5 text-indigo-400" />
+                          )}
+                          <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                            {periodKey} SESSIONS
+                          </h3>
+                          <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold">
+                            {totalPeriodMembers} {totalPeriodMembers === 1 ? 'Member' : 'Members'} Booked
                           </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="inline-flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                            <button
-                              onClick={() => handleToggleAttendanceStatus(rec.bookingId, 'ATTENDED')}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${rec.status === 'ATTENDED'
-                                ? 'bg-emerald-600 text-white shadow-sm'
-                                : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                              Attended
-                            </button>
-                            <button
-                              onClick={() => handleToggleAttendanceStatus(rec.bookingId, 'NOT_ATTENDED')}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${rec.status === 'NOT_ATTENDED'
-                                ? 'bg-amber-600 text-white shadow-sm'
-                                : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                              Absent
-                            </button>
-                            <button
-                              onClick={() => handleToggleAttendanceStatus(rec.bookingId, 'EXCUSED')}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${rec.status === 'EXCUSED'
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                              Excused
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+
+                      {/* Segregated Time Slot Windows */}
+                      <div className="space-y-4">
+                        {slotTimes.map((slotTimeStr) => {
+                          const recordsForSlot = periodSlots[slotTimeStr];
+
+                          return (
+                            <div key={slotTimeStr} className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                              {/* Slot Window Sub-Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-blue-400" />
+                                  <span className="text-sm font-bold text-white font-mono">{slotTimeStr}</span>
+                                  <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800/50 text-[10px] uppercase font-extrabold">
+                                    {periodKey} SESSION
+                                  </span>
+                                  <span className="text-xs text-slate-400 font-medium">
+                                    ({recordsForSlot.length} {recordsForSlot.length === 1 ? 'member' : 'members'})
+                                  </span>
+                                </div>
+
+                                <button
+                                  onClick={() => handleMarkSlotAllAttended(recordsForSlot)}
+                                  className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/60 text-emerald-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>Mark Slot All Attended</span>
+                                </button>
+                              </div>
+
+                              {/* Members Table for this specific slot window */}
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                  <thead className="bg-slate-900 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800/80">
+                                    <tr>
+                                      <th className="p-3">Member ID</th>
+                                      <th className="p-3">Member Name</th>
+                                      <th className="p-3">Gym Membership ID</th>
+                                      <th className="p-3">Current Status</th>
+                                      <th className="p-3 text-right">Mark Attendance</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-800/60">
+                                    {recordsForSlot.map((rec: any) => (
+                                      <tr key={rec.bookingId} className="hover:bg-slate-850/50">
+                                        <td className="p-3 font-mono font-semibold text-white">{rec.memberId}</td>
+                                        <td className="p-3 font-medium text-slate-200">{rec.name}</td>
+                                        <td className="p-3 font-mono text-blue-400 text-xs">{rec.gymMembershipId || 'N/A'}</td>
+                                        <td className="p-3">
+                                          <span
+                                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                                              rec.status === 'ATTENDED'
+                                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                : rec.status === 'NOT_ATTENDED'
+                                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                                : rec.status === 'EXCUSED'
+                                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                : 'bg-slate-800 text-slate-400'
+                                            }`}
+                                          >
+                                            {rec.status}
+                                          </span>
+                                        </td>
+                                        <td className="p-3 text-right">
+                                          <div className="inline-flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                                            <button
+                                              onClick={() => handleToggleAttendanceStatus(rec.bookingId, 'ATTENDED')}
+                                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                                                rec.status === 'ATTENDED'
+                                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                                  : 'text-slate-400 hover:text-white'
+                                              }`}
+                                            >
+                                              Attended
+                                            </button>
+                                            <button
+                                              onClick={() => handleToggleAttendanceStatus(rec.bookingId, 'NOT_ATTENDED')}
+                                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                                                rec.status === 'NOT_ATTENDED'
+                                                  ? 'bg-amber-600 text-white shadow-sm'
+                                                  : 'text-slate-400 hover:text-white'
+                                              }`}
+                                            >
+                                              Absent
+                                            </button>
+                                            <button
+                                              onClick={() => handleToggleAttendanceStatus(rec.bookingId, 'EXCUSED')}
+                                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                                                rec.status === 'EXCUSED'
+                                                  ? 'bg-blue-600 text-white shadow-sm'
+                                                  : 'text-slate-400 hover:text-white'
+                                              }`}
+                                            >
+                                              Excused
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
