@@ -170,23 +170,21 @@ export default function BookSlotPage() {
                       {slot.period} SESSION
                     </span>
 
-                    <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                        isExpired
-                          ? 'bg-slate-850 text-slate-500 border border-slate-750'
-                          : isFull
-                          ? 'badge-vacancy-full'
-                          : slot.vacancies <= 5
-                          ? 'badge-vacancy-low'
-                          : 'badge-vacancy-high'
-                      }`}
-                    >
-                      {isExpired
-                        ? 'TIME FRAME COMPLETED'
-                        : isFull
-                        ? `FULL (${slot.capacity}/${slot.capacity})`
-                        : `${slot.vacancies} / ${slot.capacity} Available (${slot.vacancies} ${slot.vacancies === 1 ? 'spot' : 'spots'} left)`}
-                    </span>
+                    {!isExpired && (
+                      <span
+                        className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          isFull
+                            ? 'badge-vacancy-full'
+                            : slot.vacancies <= 5
+                            ? 'badge-vacancy-low'
+                            : 'badge-vacancy-high'
+                        }`}
+                      >
+                        {isFull
+                          ? `FULL (${slot.capacity}/${slot.capacity})`
+                          : `${slot.vacancies} / ${slot.capacity} Available (${slot.vacancies} ${slot.vacancies === 1 ? 'spot' : 'spots'} left)`}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 text-lg font-bold text-white">
