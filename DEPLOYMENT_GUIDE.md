@@ -13,9 +13,9 @@ For high-concurrency slot booking during peak times, use a managed **PostgreSQL*
 
 1. Create a free managed database at **[Neon.tech](https://neon.tech/)** or **[Supabase.com](https://supabase.com/)**.
 2. Name your database: `ashtavakra_gym`.
-3. Copy your PostgreSQL Connection String. It will look like:
+1. Your Supabase PostgreSQL Project Connection String:
    ```env
-   postgresql://gym_owner:xxxxxxx@ep-cool-pool-123456.us-east-2.aws.neon.tech/ashtavakra_gym?sslmode=require
+   postgresql://postgres:[YOUR-PASSWORD]@db.dyhjgrliagaavizqpwvz.supabase.co:5432/postgres
    ```
 
 ---
@@ -28,8 +28,8 @@ Copy the sample environment template or set these environment variables in your 
 # Node Environment
 NODE_ENV="production"
 
-# Production PostgreSQL Database URL
-DATABASE_URL="postgresql://gym_owner:xxxxxxx@ep-cool-pool-123456.us-east-2.aws.neon.tech/ashtavakra_gym?sslmode=require"
+# Production Supabase PostgreSQL Database URL
+DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.dyhjgrliagaavizqpwvz.supabase.co:5432/postgres"
 
 # Random 64-character JWT Secret String
 JWT_SECRET="somaiya-ashtavakra-gym-prod-2026-secret-key-32-chars"
