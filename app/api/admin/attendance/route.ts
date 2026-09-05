@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    // updates: Array of { bookingId: string, status: 'ATTENDED' | 'NOT_ATTENDED' | 'EXCUSED' | 'PENDING' }
+    // updates: Array of { bookingId: string, status: 'ATTENDED' | 'NOT_ATTENDED' | 'PENDING' }
     const { updates } = body;
 
     if (!Array.isArray(updates) || updates.length === 0) {
@@ -76,6 +76,20 @@ export async function POST(req: Request) {
     }
 
     const now = new Date();
+    const todayStr = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Check if target booking belongs to a future date
+    const sampleBooking = await prisma.booking.findUnique({
+      where: { id: updates[0].bookingId },
+      include: { slot: true },
+    });
+
+    if (sampleBooking && sampleBooking.slot.date > todayStr) {
+      return NextResponse.json(
+        { error: 'Attendance cannot be marked for upcoming dates. It can only be recorded on or after the scheduled date.' },
+        { status: 400 }
+      );
+    }
 
     const results = await prisma.$transaction(
       updates.map((item) =>
