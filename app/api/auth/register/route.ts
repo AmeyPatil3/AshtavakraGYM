@@ -26,13 +26,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Unique Member ID & Email Check
-    const existingEmail = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    // 2. Unique Member ID & Email Check (parallelized for speed)
+    const [existingEmail, existingMemberId] = await Promise.all([
+      prisma.user.findUnique({ where: { email: normalizedEmail } }),
+      prisma.user.findUnique({ where: { memberId: memberId.trim().toUpperCase() } }),
+    ]);
+
     if (existingEmail) {
       return NextResponse.json({ error: 'An account with this email already exists' }, { status: 400 });
     }
 
-    const existingMemberId = await prisma.user.findUnique({ where: { memberId: memberId.trim().toUpperCase() } });
     if (existingMemberId) {
       return NextResponse.json({ error: 'This Somaiya ID Card Number is already registered' }, { status: 400 });
     }

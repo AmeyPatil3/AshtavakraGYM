@@ -12,20 +12,37 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
-    // 1. Total Members & Active Count
-    const totalMembers = await prisma.user.count({ where: { role: 'MEMBER' } });
-    const activeMembers = await prisma.user.count({ where: { role: 'MEMBER', status: 'ACTIVE' } });
+    // 1. Prepare trend date range
+    const targetDateObj = new Date(`${dateParam}T00:00:00`);
+    const trendDates: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(targetDateObj);
+      d.setDate(targetDateObj.getDate() - i);
+      trendDates.push(d.toISOString().split('T')[0]);
+    }
 
-    // 2. Selected Date Slots & Attendance Overview
-    const dateSlots = await prisma.slot.findMany({
-      where: { date: dateParam, status: 'ACTIVE' },
-      include: {
-        bookings: {
-          include: { attendance: true },
+    // 2. Fetch all independent metrics in parallel (collapses cross-continental DB roundtrips)
+    const [totalMembers, activeMembers, dateSlots, trendSlots] = await Promise.all([
+      prisma.user.count({ where: { role: 'MEMBER' } }),
+      prisma.user.count({ where: { role: 'MEMBER', status: 'ACTIVE' } }),
+      prisma.slot.findMany({
+        where: { date: dateParam, status: 'ACTIVE' },
+        include: {
+          bookings: {
+            include: { attendance: true },
+          },
         },
-      },
-      orderBy: { startTime: 'asc' },
-    });
+        orderBy: { startTime: 'asc' },
+      }),
+      prisma.slot.findMany({
+        where: { date: { in: trendDates }, status: 'ACTIVE' },
+        include: {
+          bookings: {
+            include: { attendance: true },
+          },
+        },
+      }),
+    ]);
 
     let dateTotalBookings = 0;
     let dateAttended = 0;
@@ -59,24 +76,6 @@ export async function GET(req: Request) {
 
     const utilizationRate = dateCapacityTotal > 0 ? Math.round((dateTotalBookings / dateCapacityTotal) * 100) : 0;
     const attendanceRate = dateTotalBookings > 0 ? Math.round((dateAttended / dateTotalBookings) * 100) : 100;
-
-    // 3. 7-Day Trend Data ending at dateParam
-    const targetDateObj = new Date(`${dateParam}T00:00:00`);
-    const trendDates: string[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(targetDateObj);
-      d.setDate(targetDateObj.getDate() - i);
-      trendDates.push(d.toISOString().split('T')[0]);
-    }
-
-    const trendSlots = await prisma.slot.findMany({
-      where: { date: { in: trendDates }, status: 'ACTIVE' },
-      include: {
-        bookings: {
-          include: { attendance: true },
-        },
-      },
-    });
 
     const dateMap: Record<string, { date: string; bookings: number; attended: number }> = {};
     trendDates.forEach((d) => {

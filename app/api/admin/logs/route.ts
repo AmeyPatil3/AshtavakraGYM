@@ -17,39 +17,39 @@ export async function GET(req: Request) {
     const startOfDay = new Date(`${dateParam}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateParam}T23:59:59.999Z`);
 
-    const logs = await prisma.auditLog.findMany({
-      where: {
-        createdAt: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      include: {
-        admin: {
-          select: { id: true, name: true, email: true, memberId: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Also fetch attendance activity logs for that date as backup if audit log was not populated
-    const attendanceLogs = await prisma.attendance.findMany({
-      where: {
-        updatedAt: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      include: {
-        booking: {
-          include: {
-            user: { select: { name: true, memberId: true, email: true } },
-            slot: true,
+    const [logs, attendanceLogs] = await Promise.all([
+      prisma.auditLog.findMany({
+        where: {
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
           },
         },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+        include: {
+          admin: {
+            select: { id: true, name: true, email: true, memberId: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.attendance.findMany({
+        where: {
+          updatedAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+        include: {
+          booking: {
+            include: {
+              user: { select: { name: true, memberId: true, email: true } },
+              slot: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
 
     const formattedLogs = logs.map((log) => ({
       id: log.id,

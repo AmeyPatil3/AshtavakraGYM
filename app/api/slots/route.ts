@@ -51,26 +51,28 @@ export async function GET(req: Request) {
 
     // Auto-generate if empty
     if (slots.length === 0) {
-      for (const def of defaultSlotDefs) {
-        await prisma.slot.upsert({
-          where: {
-            date_startTime_endTime: {
+      await prisma.$transaction(
+        defaultSlotDefs.map((def) =>
+          prisma.slot.upsert({
+            where: {
+              date_startTime_endTime: {
+                date: dateParam,
+                startTime: def.startTime,
+                endTime: def.endTime,
+              },
+            },
+            update: { capacity },
+            create: {
               date: dateParam,
               startTime: def.startTime,
               endTime: def.endTime,
+              period: def.period,
+              capacity,
+              status: 'ACTIVE',
             },
-          },
-          update: { capacity },
-          create: {
-            date: dateParam,
-            startTime: def.startTime,
-            endTime: def.endTime,
-            period: def.period,
-            capacity,
-            status: 'ACTIVE',
-          },
-        });
-      }
+          })
+        )
+      );
 
       slots = await prisma.slot.findMany({
         where: { date: dateParam, status: 'ACTIVE' },
