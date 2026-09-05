@@ -28,8 +28,11 @@ Copy the sample environment template or set these environment variables in your 
 # Node Environment
 NODE_ENV="production"
 
-# Production Supabase PostgreSQL Database URL
-DATABASE_URL="postgresql://postgres:Ashtavakra2026@db.hhoupkqtszydiciovyqu.supabase.co:5432/postgres"
+# Production Supabase PostgreSQL Connection Pooler URL (Port 6543 for Vercel Serverless)
+DATABASE_URL="postgresql://postgres.hhoupkqtszydiciovyqu:Ashtavakra2026@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Production Supabase Direct Connection URL (Port 5432)
+DIRECT_URL="postgresql://postgres:Ashtavakra2026@db.hhoupkqtszydiciovyqu.supabase.co:5432/postgres?sslmode=require"
 
 # Cryptographically Generated 64-character JWT Secret Key
 JWT_SECRET="db7c6f06940370bf43af9798069834d5bf5a0374e546cb4ef351379439d47ef5"
