@@ -29,7 +29,7 @@ Copy the sample environment template or set these environment variables in your 
 NODE_ENV="production"
 
 # Production Supabase PostgreSQL Database URL
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.dyhjgrliagaavizqpwvz.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres:Ashtavakra2026@db.hhoupkqtszydiciovyqu.supabase.co:5432/postgres"
 
 # Cryptographically Generated 64-character JWT Secret Key
 JWT_SECRET="db7c6f06940370bf43af9798069834d5bf5a0374e546cb4ef351379439d47ef5"
