@@ -29,7 +29,7 @@ Copy the sample environment template or set these environment variables in your 
 NODE_ENV="production"
 
 # Production Supabase PostgreSQL Connection Pooler URL (Port 6543 for Vercel Serverless)
-DATABASE_URL="postgresql://postgres.hhoupkqtszydiciovyqu:Ashtavakra2026@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DATABASE_URL="postgresql://postgres.hhoupkqtszydiciovyqu:Ashtavakra2026@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
 
 # Production Supabase Direct Connection URL (Port 5432)
 DIRECT_URL="postgresql://postgres:Ashtavakra2026@db.hhoupkqtszydiciovyqu.supabase.co:5432/postgres?sslmode=require"
