@@ -46,7 +46,16 @@ export async function setSessionCookie(payload: UserSessionPayload) {
 
 export async function removeSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.set(COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  });
+  try {
+    cookieStore.delete(COOKIE_NAME);
+  } catch {}
 }
 
 export async function validateEmailDomain(email: string): Promise<{ isValid: boolean; allowedDomains: string[] }> {

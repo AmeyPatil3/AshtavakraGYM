@@ -42,9 +42,11 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
     setUser(null);
-    router.push('/login');
+    window.location.href = '/';
   };
 
   return (
