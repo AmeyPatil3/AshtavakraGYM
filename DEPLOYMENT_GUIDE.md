@@ -31,8 +31,8 @@ NODE_ENV="production"
 # Production Supabase PostgreSQL Database URL
 DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.dyhjgrliagaavizqpwvz.supabase.co:5432/postgres"
 
-# Random 64-character JWT Secret String
-JWT_SECRET="somaiya-ashtavakra-gym-prod-2026-secret-key-32-chars"
+# Cryptographically Generated 64-character JWT Secret Key
+JWT_SECRET="db7c6f06940370bf43af9798069834d5bf5a0374e546cb4ef351379439d47ef5"
 
 # Organizational Email Domain Lock
 ALLOWED_DOMAINS="somaiya.edu"
